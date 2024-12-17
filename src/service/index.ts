@@ -6,7 +6,8 @@ import Ruleset, { getRuleset } from '@core/lib/ruleset';
 import { color, distinctMovies, isFulfilled, isMovie, success } from '@core/lib/utils';
 import PlexApi from '@core/api/plex';
 
-const processMovieResult = async (movies: MovieResult[], overseerr: OverseerrApi, ruleset: Ruleset, dryRun: boolean) => {
+const processMovieResult = async (movies: MovieResult[], overseerr: OverseerrApi, ruleset: Ruleset, dryRun: boolean, maxRequests: number | undefined) => {
+    var numAdded = 0;
     for (const movie of movies) {
         if (movie.mediaInfo && movie.mediaInfo.status !== MediaStatus.UNKNOWN) {
             logger.info(`  Skipping  - "${movie.title}" because it has already been processed`);
@@ -30,6 +31,10 @@ const processMovieResult = async (movies: MovieResult[], overseerr: OverseerrApi
                     } as RequestOption;
 
                     await overseerr.requestMovie(movie.id, options);
+                }
+                numAdded += 1;
+                if (maxRequests !== undefined && numAdded >= maxRequests) {
+                    break;
                 }
             } else if (ruleResult.result === 'reject') {
                 logger.info(`${color.red('  Rejecting')} - "${ruleResult.movie.title}" because of rule "${color.blue(ruleResult.rule?.name ?? '')}"`);
@@ -56,6 +61,10 @@ export const discover = async () => {
         const ruleset = getRuleset(settings.ruleset);
         logger.info(`Using ruleset: ${ruleset.name}`);
 
+        if (settings.maxRequests !== undefined) {
+            logger.info(`Max requests: ${settings.maxRequests}`)
+        }
+
         logger.info(` Searching into following streams: ${streams.join(', ')}`);
         const results: Promise<MovieResult[]>[] = streams.map((s) => {
             if (s.toLowerCase() == 'upcoming') {
@@ -77,7 +86,7 @@ export const discover = async () => {
         logger.info(`Found ${movies.length} to analyze...`);
         const dryRun = getSettings().overseerr.dryRun ?? false;
 
-        await processMovieResult(movies, overseerr, ruleset, dryRun);
+        await processMovieResult(movies, overseerr, ruleset, dryRun, settings.maxRequests);
     } finally {
         logger.info('Discovery complete !');
     }
@@ -124,7 +133,7 @@ export const smartRecommendations = async () => {
         const recommendationsMap = new Map<number, MovieResult>(recommendations.map((movie) => [movie.id, movie]));
         const recommendedMovies = Array.from(recommendationsMap.values());
 
-        await processMovieResult(recommendedMovies, overseerr, ruleset, dryRun);
+        await processMovieResult(recommendedMovies, overseerr, ruleset, dryRun, settings.maxRequests);
     } finally {
         logger.info('Smart recommendations complete !');
     }
