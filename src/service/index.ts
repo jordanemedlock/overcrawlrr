@@ -7,7 +7,11 @@ import { color, distinctMovies, isFulfilled, isMovie, success } from '@core/lib/
 import PlexApi from '@core/api/plex';
 
 const processMovieResult = async (movies: MovieResult[], overseerr: OverseerrApi, ruleset: Ruleset, dryRun: boolean, maxRequests: number | undefined) => {
-    var numAdded = 0;
+    let numAdded = 0;
+
+    if (maxRequests !== undefined) {
+        logger.info(`Max requests: ${maxRequests}`)
+    }    
     for (const movie of movies) {
         if (movie.mediaInfo && movie.mediaInfo.status !== MediaStatus.UNKNOWN) {
             logger.info(`  Skipping  - "${movie.title}" because it has already been processed`);
@@ -61,10 +65,6 @@ export const discover = async () => {
         }
         const ruleset = getRuleset(settings.ruleset);
         logger.info(`Using ruleset: ${ruleset.name}`);
-
-        if (settings.maxRequests !== undefined) {
-            logger.info(`Max requests: ${settings.maxRequests}`)
-        }
 
         logger.info(` Searching into following streams: ${streams.join(', ')}`);
         const results: Promise<MovieResult[]>[] = streams.map((s) => {
