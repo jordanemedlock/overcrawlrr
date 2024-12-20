@@ -15,6 +15,10 @@ export interface YamlSettings {
 export interface CrawlrrSettings {
     overseerr: OverseerSettings;
     plex?: PlexSettings;
+    movies: MoviesSettings;
+}
+
+export interface MoviesSettings {
     discovery?: DiscoverySettings;
     smartRecommendations?: SmartRecommendationsSettings;
     rulesets: RulesetOptions[];
