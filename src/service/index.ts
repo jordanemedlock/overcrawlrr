@@ -34,6 +34,7 @@ const processMovieResult = async (movies: MovieResult[], overseerr: OverseerrApi
                 }
                 numAdded += 1;
                 if (maxRequests !== undefined && numAdded >= maxRequests) {
+                    logger.info(`Maximum requests limit (${maxRequests}) reached. Stopping analyze here...`);
                     break;
                 }
             } else if (ruleResult.result === 'reject') {
